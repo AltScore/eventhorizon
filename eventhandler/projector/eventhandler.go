@@ -136,7 +136,7 @@ func WithWait() Option {
 }
 
 // WithRetryOnce adds a single retry in case of version mismatch. Useful to
-// let racy projections finish witout an error.
+// let racy projections finish without an error.
 func WithRetryOnce() Option {
 	return func(h *EventHandler) {
 		h.useRetryOnce = true

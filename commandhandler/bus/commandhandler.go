@@ -17,6 +17,7 @@ package bus
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 
 	eh "github.com/looplab/eventhorizon"
@@ -62,7 +63,7 @@ func (h *CommandHandler) HandleCommand(ctx context.Context, cmd eh.Command) erro
 		return handler.HandleCommand(ctx, cmd)
 	}
 
-	return ErrHandlerNotFound
+	return fmt.Errorf("type %s: %w", cmd.CommandType(), ErrHandlerNotFound)
 }
 
 // SetHandler adds a handler for a specific command.

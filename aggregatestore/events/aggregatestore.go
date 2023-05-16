@@ -177,7 +177,7 @@ func (r *AggregateStore) Save(ctx context.Context, agg eh.Aggregate) error {
 	a.ClearUncommittedEvents()
 
 	// Apply the events in case the aggregate needs to be further used
-	// after this save. Currently it is not reused.
+	// after this save. Currently, it is not reused.
 	if err := r.applyEvents(ctx, a, events); err != nil {
 		return &eh.AggregateStoreError{
 			Err:           err,
