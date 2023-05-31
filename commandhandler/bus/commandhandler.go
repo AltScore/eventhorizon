@@ -60,7 +60,7 @@ func (h *CommandHandler) HandleCommand(ctx context.Context, cmd eh.Command) erro
 	defer h.handlersMu.RUnlock()
 
 	if handler, ok := h.handlers[cmd.CommandType()]; ok {
-		return handler.HandleCommand(ctx, cmd)
+		return handler.HandleCommand(ctx, cmd) // TODO handle command inside lock???
 	}
 
 	return fmt.Errorf("type %s: %w", cmd.CommandType(), ErrHandlerNotFound)
