@@ -192,7 +192,7 @@ func (b *EventBus) handle(m eh.EventMatcher, h eh.EventHandler, ch <-chan []byte
 	}
 }
 
-// Group is a publishing group shared by multiple event busses locally, if needed.
+// Group is a publishing group shared by multiple event buses locally, if needed.
 type Group struct {
 	bus   map[string]chan []byte
 	busMu sync.RWMutex
