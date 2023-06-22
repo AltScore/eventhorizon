@@ -25,7 +25,7 @@ import (
 	"github.com/looplab/eventhorizon/uuid"
 )
 
-// The default command queue size to use.
+// ScheduledCommandsQueueSize is the default command queue size to use.
 var ScheduledCommandsQueueSize = 100
 
 // ErrCanceled is when a scheduled command has been canceled.
@@ -39,12 +39,12 @@ type Command interface {
 	ExecuteAt() time.Time
 }
 
-// CommandWithExecuteTime returns a wrapped command with a execution time set.
+// CommandWithExecuteTime returns a wrapped command with an execution time set.
 func CommandWithExecuteTime(cmd eh.Command, t time.Time) Command {
 	return &command{Command: cmd, t: t}
 }
 
-// private implementation to wrap ordinary commands and add a execution time.
+// private implementation to wrap ordinary commands and add an execution time.
 type command struct {
 	eh.Command
 	t time.Time
@@ -65,7 +65,7 @@ func NewMiddleware(repo eh.ReadWriteRepo, codec eh.CommandCodec) (eh.CommandHand
 		codec:            codec,
 	}
 
-	return eh.CommandHandlerMiddleware(func(h eh.CommandHandler) eh.CommandHandler {
+	return func(h eh.CommandHandler) eh.CommandHandler {
 		s.setHandler(h)
 
 		return eh.CommandHandlerFunc(func(ctx context.Context, cmd eh.Command) error {
@@ -86,7 +86,7 @@ func NewMiddleware(repo eh.ReadWriteRepo, codec eh.CommandCodec) (eh.CommandHand
 			// Immediate command execution.
 			return h.HandleCommand(ctx, cmd)
 		})
-	}), s
+	}, s
 }
 
 // PersistedCommand is a persisted command.
@@ -104,7 +104,7 @@ func (c *PersistedCommand) EntityID() uuid.UUID {
 	return c.ID
 }
 
-// Scheduler is a scheduled of commands.
+// Scheduler is a scheduler of commands.
 type Scheduler struct {
 	h                  eh.CommandHandler
 	hMu                sync.Mutex
@@ -277,7 +277,7 @@ func (s *Scheduler) Commands(ctx context.Context) ([]*PersistedCommand, error) {
 }
 
 // CancelCommand cancels a scheduled command.
-func (s *Scheduler) CancelCommand(ctx context.Context, id uuid.UUID) error {
+func (s *Scheduler) CancelCommand(_ context.Context, id uuid.UUID) error {
 	s.cancelSchedulingMu.Lock()
 	defer s.cancelSchedulingMu.Unlock()
 
@@ -363,7 +363,7 @@ type Error struct {
 	Err error
 	// Ctx is the context used when the error happened.
 	Ctx context.Context
-	// Command is the command handeled when the error happened.
+	// Command is the command handled when the error happened.
 	Command eh.Command
 }
 

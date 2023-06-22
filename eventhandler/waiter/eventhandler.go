@@ -45,12 +45,12 @@ func NewEventHandler() *EventHandler {
 
 // HandlerType implements the HandlerType method of the eventhorizon.EventHandler interface.
 func (h *EventHandler) HandlerType() eh.EventHandlerType {
-	return eh.EventHandlerType("waiter")
+	return "waiter"
 }
 
 // HandleEvent implements the HandleEvent method of the eventhorizon.EventHandler interface.
 // It forwards events to the waiters so that they can match the events.
-func (h *EventHandler) HandleEvent(ctx context.Context, event eh.Event) error {
+func (h *EventHandler) HandleEvent(_ context.Context, event eh.Event) error {
 	if event == nil {
 		return eh.ErrMissingEvent
 	}
