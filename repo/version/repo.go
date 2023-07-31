@@ -38,7 +38,7 @@ func NewRepo(repo eh.ReadWriteRepo) *Repo {
 }
 
 // InnerRepo implements the InnerRepo method of the eventhorizon.ReadRepo interface.
-func (r *Repo) InnerRepo(ctx context.Context) eh.ReadRepo {
+func (r *Repo) InnerRepo(_ context.Context) eh.ReadRepo {
 	return r.ReadWriteRepo
 }
 
@@ -103,7 +103,7 @@ func (r *Repo) Find(ctx context.Context, id uuid.UUID) (eh.Entity, error) {
 	}
 }
 
-// findMinVersion finds an item if it has a version and it is at least minVersion.
+// findMinVersion finds an item if it has a version, and it is at least minVersion.
 func (r *Repo) findMinVersion(ctx context.Context, id uuid.UUID, minVersion int) (eh.Entity, error) {
 	entity, err := r.ReadWriteRepo.Find(ctx, id)
 	if err != nil {

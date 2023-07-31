@@ -48,7 +48,7 @@ var (
 	ErrModelNotSet = errors.New("model not set")
 	// ErrModelRemoved is when a model has been removed.
 	ErrModelRemoved = errors.New("model removed")
-	// Returned if the model has not incremented its version as predicted.
+	// ErrIncorrectProjectedEntityVersion is returned if the model has not incremented its version as predicted.
 	ErrIncorrectProjectedEntityVersion = errors.New("incorrect projected entity version")
 )
 
