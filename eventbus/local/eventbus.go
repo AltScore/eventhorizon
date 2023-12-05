@@ -99,7 +99,7 @@ func (b *EventBus) HandleEvent(ctx context.Context, event eh.Event) error {
 }
 
 // AddHandler implements the AddHandler method of the eventhorizon.EventBus interface.
-func (b *EventBus) AddHandler(ctx context.Context, m eh.EventMatcher, h eh.EventHandler) error {
+func (b *EventBus) AddHandler(_ context.Context, m eh.EventMatcher, h eh.EventHandler) error {
 	if m == nil {
 		return eh.ErrMissingMatcher
 	}
@@ -192,7 +192,7 @@ func (b *EventBus) handle(m eh.EventMatcher, h eh.EventHandler, ch <-chan []byte
 	}
 }
 
-// Group is a publishing group shared by multiple event busses locally, if needed.
+// Group is a publishing group shared by multiple event buses locally, if needed.
 type Group struct {
 	bus   map[string]chan []byte
 	busMu sync.RWMutex
@@ -219,7 +219,7 @@ func (g *Group) channel(id string) <-chan []byte {
 	return ch
 }
 
-func (g *Group) publish(ctx context.Context, b []byte) error {
+func (g *Group) publish(_ context.Context, b []byte) error {
 	g.busMu.RLock()
 	defer g.busMu.RUnlock()
 
