@@ -19,15 +19,15 @@ import (
 	"fmt"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	mongoOptions "go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readconcern"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"go.mongodb.org/mongo-driver/mongo/writeconcern"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	mongoOptions "go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
+	"go.mongodb.org/mongo-driver/v2/mongo/writeconcern"
 
 	// Register uuid.UUID as BSON type.
-	_ "github.com/looplab/eventhorizon/codec/bson"
+	bsoncodec "github.com/looplab/eventhorizon/codec/bson"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/uuid"
@@ -55,11 +55,11 @@ const (
 // NewEventStore creates a new EventStore with a MongoDB URI: `mongodb://hostname`.
 func NewEventStore(uri, dbName string, options ...Option) (*EventStore, error) {
 	opts := mongoOptions.Client().ApplyURI(uri)
-	opts.SetWriteConcern(writeconcern.New(writeconcern.WMajority()))
+	opts.SetWriteConcern(writeconcern.Majority())
 	opts.SetReadConcern(readconcern.Majority())
 	opts.SetReadPreference(readpref.Primary())
 
-	client, err := mongo.Connect(context.TODO(), opts)
+	client, err := mongo.Connect(opts)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect to DB: %w", err)
 	}
@@ -77,7 +77,7 @@ func newEventStoreWithClient(client *mongo.Client, clientOwnership clientOwnersh
 		return nil, fmt.Errorf("missing DB client")
 	}
 
-	db := client.Database(dbName)
+	db := client.Database(dbName, mongoOptions.Database().SetRegistry(bsoncodec.Registry))
 
 	s := &EventStore{
 		client:          client,
@@ -221,7 +221,7 @@ func (s *EventStore) Save(ctx context.Context, events []eh.Event, originalVersio
 	}
 
 	// Run the operation in a transaction if using an outbox, otherwise it's not needed.
-	saveEvents := func(ctx mongo.SessionContext) error {
+	saveEvents := func(ctx context.Context) error {
 		// Either insert a new aggregate or append to an existing.
 		if originalVersion == 0 {
 			aggregate := aggregateRecord{
@@ -257,7 +257,7 @@ func (s *EventStore) Save(ctx context.Context, events []eh.Event, originalVersio
 
 	// Run the operation in a transaction if using an outbox, otherwise it's not needed.
 	if s.eventHandlerInTX != nil {
-		sess, err := s.client.StartSession(nil)
+		sess, err := s.client.StartSession()
 		if err != nil {
 			return &eh.EventStoreError{
 				Err:              fmt.Errorf("could not start transaction: %w", err),
@@ -271,7 +271,7 @@ func (s *EventStore) Save(ctx context.Context, events []eh.Event, originalVersio
 
 		defer sess.EndSession(ctx)
 
-		if _, err := sess.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
+		if _, err := sess.WithTransaction(ctx, func(ctx context.Context) (interface{}, error) {
 			if err := saveEvents(ctx); err != nil {
 				return nil, err
 			}
@@ -294,8 +294,7 @@ func (s *EventStore) Save(ctx context.Context, events []eh.Event, originalVersio
 			}
 		}
 	} else {
-		dummySessionCtx := mongo.NewSessionContext(ctx, nil)
-		if err := saveEvents(dummySessionCtx); err != nil {
+		if err := saveEvents(ctx); err != nil {
 			return &eh.EventStoreError{
 				Err:              err,
 				Op:               eh.EventStoreOpSave,
@@ -425,7 +424,7 @@ type evt struct {
 	AggregateType eh.AggregateType       `bson:"aggregate_type"`
 	AggregateID   uuid.UUID              `bson:"_id"`
 	Version       int                    `bson:"version"`
-	Metadata      map[string]interface{} `bson:"metadata"`
+	Metadata      map[string]any `bson:"metadata"`
 }
 
 // newEvt returns a new evt for an event.

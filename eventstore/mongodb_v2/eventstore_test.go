@@ -18,12 +18,13 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"fmt"
 	"log"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/testcontainers/testcontainers-go"
 	tcMongo "github.com/testcontainers/testcontainers-go/modules/mongodb"
 
 	eh "github.com/looplab/eventhorizon"
@@ -43,31 +44,31 @@ func TestMain(m *testing.M) {
 	ctx := context.Background()
 
 	container, err := tcMongo.Run(ctx, "mongo:7", tcMongo.WithReplicaSet("rs0"))
+	defer func() {
+		if err := testcontainers.TerminateContainer(container); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
+
 	if err != nil {
 		log.Printf("could not start MongoDB container (skipping integration tests): %s", err)
 		os.Exit(m.Run())
 	}
 
-	host, err := container.Host(ctx)
+	testMongoURL, err = container.ConnectionString(ctx)
 	if err != nil {
-		log.Fatalf("could not get MongoDB host: %s", err)
+		log.Printf("unable to get MongoDB connection string: %s", err)
+		os.Exit(m.Run())
 	}
 
-	port, err := container.MappedPort(ctx, "27017/tcp")
-	if err != nil {
-		log.Fatalf("could not get MongoDB port: %s", err)
+	// Force direct connection to bypass RS topology discovery.
+	if !strings.Contains(testMongoURL, "?") {
+		testMongoURL += "?directConnection=true&replicaSet=rs0"
+	} else {
+		testMongoURL += "&directConnection=true&replicaSet=rs0"
 	}
-
-	// Use directConnection=true to bypass replica set member discovery,
-	// which would try to connect to the container's internal IP.
-	testMongoURL = fmt.Sprintf("mongodb://%s:%s/?directConnection=true", host, port.Port())
 
 	code := m.Run()
-
-	if err := container.Terminate(ctx); err != nil {
-		log.Printf("could not terminate MongoDB container: %s", err)
-	}
-
 	os.Exit(code)
 }
 

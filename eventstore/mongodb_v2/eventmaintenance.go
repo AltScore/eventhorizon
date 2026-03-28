@@ -18,11 +18,8 @@ import (
 	"context"
 	"fmt"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-
-	// Register uuid.UUID as BSON type.
-	_ "github.com/looplab/eventhorizon/codec/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 
 	eh "github.com/looplab/eventhorizon"
 )
@@ -33,7 +30,7 @@ func (s *EventStore) Replace(ctx context.Context, event eh.Event) error {
 	at := event.AggregateType()
 	av := event.Version()
 
-	sess, err := s.client.StartSession(nil)
+	sess, err := s.client.StartSession()
 	if err != nil {
 		return &eh.EventStoreError{
 			Err:              fmt.Errorf("could not start transaction: %w", err),
@@ -47,7 +44,7 @@ func (s *EventStore) Replace(ctx context.Context, event eh.Event) error {
 
 	defer sess.EndSession(ctx)
 
-	if _, err := sess.WithTransaction(ctx, func(txCtx mongo.SessionContext) (interface{}, error) {
+	if _, err := sess.WithTransaction(ctx, func(txCtx context.Context) (interface{}, error) {
 		// First check if the aggregate exists, the not found error in the update
 		// query can mean both that the aggregate or the event is not found.
 		if n, err := s.events.CountDocuments(ctx,
