@@ -24,7 +24,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/looplab/eventhorizon/mongoutils"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	mongoOptions "go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -33,8 +32,8 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/writeconcern"
 
 	bsoncodec "github.com/looplab/eventhorizon/codec/bson"
-
 	eh "github.com/looplab/eventhorizon"
+	"github.com/looplab/eventhorizon/mongoutils"
 	"github.com/looplab/eventhorizon/uuid"
 )
 

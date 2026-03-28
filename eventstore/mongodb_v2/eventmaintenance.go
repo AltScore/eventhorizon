@@ -16,6 +16,7 @@ package mongodb_v2
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -47,11 +48,13 @@ func (s *EventStore) Replace(ctx context.Context, event eh.Event) error {
 	if _, err := sess.WithTransaction(ctx, func(txCtx context.Context) (interface{}, error) {
 		// First check if the aggregate exists, the not found error in the update
 		// query can mean both that the aggregate or the event is not found.
-		if n, err := s.events.CountDocuments(txCtx,
-			bson.M{"aggregate_id": id}); n == 0 {
-			return nil, eh.ErrAggregateNotFound
-		} else if err != nil {
+		n, err := s.events.CountDocuments(txCtx, bson.M{"aggregate_id": id})
+		if err != nil {
 			return nil, err
+		}
+
+		if n == 0 {
+			return nil, eh.ErrAggregateNotFound
 		}
 
 		// Create the event record for the Database.
@@ -66,7 +69,7 @@ func (s *EventStore) Replace(ctx context.Context, event eh.Event) error {
 			"version":      event.Version(),
 		})
 		if res.Err() != nil {
-			if res.Err() == mongo.ErrNoDocuments {
+			if errors.Is(res.Err(), mongo.ErrNoDocuments) {
 				return nil, eh.ErrEventNotFound
 			}
 
