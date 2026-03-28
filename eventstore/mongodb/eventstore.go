@@ -363,7 +363,7 @@ func (s *EventStore) LoadFrom(ctx context.Context, id uuid.UUID, version int) ([
 				}
 			}
 
-			if err := bson.Unmarshal(e.RawData, e.data); err != nil {
+			if err := bsoncodec.Unmarshal(e.RawData, e.data); err != nil {
 				return nil, &eh.EventStoreError{
 					Err:              fmt.Errorf("could not unmarshal event data: %w", err),
 					Op:               eh.EventStoreOpLoad,
@@ -442,7 +442,7 @@ func newEvt(ctx context.Context, event eh.Event) (*evt, error) {
 	if event.Data() != nil {
 		var err error
 
-		e.RawData, err = bson.Marshal(event.Data())
+		e.RawData, err = bsoncodec.Marshal(event.Data())
 		if err != nil {
 			return nil, fmt.Errorf("could not marshal event data: %w", err)
 		}

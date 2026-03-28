@@ -24,6 +24,10 @@ func TestMain(m *testing.M) {
 		os.Exit(m.Run())
 	}
 
+	os.Exit(runWithMongo(m))
+}
+
+func runWithMongo(m *testing.M) int {
 	ctx := context.Background()
 
 	container, err := tcMongo.Run(ctx, "mongo:7", tcMongo.WithReplicaSet("rs0"))
@@ -32,29 +36,25 @@ func TestMain(m *testing.M) {
 			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+
 	if err != nil {
 		log.Printf("could not start MongoDB container (skipping integration tests): %s", err)
-		os.Exit(m.Run())
+		return m.Run()
 	}
 
 	testMongoURL, err = container.ConnectionString(ctx)
 	if err != nil {
 		log.Printf("unable to get MongoDB connection string: %s", err)
-		os.Exit(m.Run())
+		return m.Run()
 	}
-	// Fix: force direct connection to bypass RS topology discovery
+
 	if !strings.Contains(testMongoURL, "?") {
 		testMongoURL += "?directConnection=true&replicaSet=rs0"
 	} else {
 		testMongoURL += "&directConnection=true&replicaSet=rs0"
 	}
-	code := m.Run()
 
-	if err := container.Terminate(ctx); err != nil {
-		log.Printf("could not terminate MongoDB container: %s", err)
-	}
-
-	os.Exit(code)
+	return m.Run()
 }
 
 func requireMongo(t *testing.T) {

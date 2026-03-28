@@ -75,7 +75,7 @@ func newUUIDRegistry() *bson.Registry {
 			if !val.IsValid() || !val.CanSet() || val.Kind() != reflect.Array {
 				return bson.ValueDecoderError{
 					Name:     "uuid.UUID",
-					Kinds:    []reflect.Kind{reflect.Bool},
+					Kinds:    []reflect.Kind{reflect.Array},
 					Received: val,
 				}
 			}

@@ -480,7 +480,7 @@ func (s *EventStore) loadFromCursor(ctx context.Context, id uuid.UUID, cursor *m
 				}
 			}
 
-			if err := bson.Unmarshal(e.RawData, e.data); err != nil {
+			if err := bsoncodec.Unmarshal(e.RawData, e.data); err != nil {
 				return nil, &eh.EventStoreError{
 					Err:              fmt.Errorf("could not unmarshal event data: %w", err),
 					Op:               eh.EventStoreOpLoad,
@@ -713,6 +713,10 @@ func (s *EventStore) updateStreamForEntity(txCtx context.Context, dbEvents []int
 			UpdatedAt:     lastEvent.Timestamp,
 		}
 		if _, err := s.streams.InsertOne(txCtx, newStream); err != nil {
+			if mongo.IsDuplicateKeyError(err) {
+				return eh.ErrEventConflictFromOtherSave
+			}
+
 			return fmt.Errorf("could not insert stream: %w", err)
 		}
 	} else {
@@ -790,7 +794,7 @@ func newEvt(_ context.Context, event eh.Event) (*evt, error) {
 	if event.Data() != nil {
 		var err error
 
-		e.RawData, err = bson.Marshal(event.Data())
+		e.RawData, err = bsoncodec.Marshal(event.Data())
 		if err != nil {
 			return nil, &eh.EventStoreError{
 				Err: fmt.Errorf("could not marshal event data: %w", err),
